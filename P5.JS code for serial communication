@@ -1,0 +1,297 @@
+//////////////VarCar/////
+// Define Serial port
+let serial;
+let keyVal;
+//////////////////////////
+const HANDTRACKW = 432;
+const HANDTRACKH = 34;
+
+const VIDEOW = 320;
+const VIDEOH = 240;
+
+const XINC = 5;
+const CLR = "rgba(200, 63, 84, 0.5)";
+
+let smooth = false;
+let recentXs = [];
+let numXs = 0;
+
+// Posenet variables
+let video;
+let poseNet;
+
+// Variables to hold poses
+let myPose = {};
+let myRHand;
+
+let movement;
+////////////////////////
+
+let Acceleration = 0;
+let Brake = 0;
+let data1 = 0;
+let data2 = 0;
+
+let s2_comp=false;
+
+function setup() {
+ // Create a canvas
+  //createCanvas(400, 400);
+
+  // // Open Serial port
+  // serial = new p5.SerialPort();
+  // serial.open("COM3"); // Replace with the correct port for your Arduino board
+  // serial.on("open", serialReady);
+
+  ///////////////////////////
+  // Create p5 canvas
+  createCanvas(600, 600);
+  rectMode(CENTER);
+
+  // Create webcam capture for posenet
+  video = createCapture(VIDEO);
+  video.size(VIDEOW, VIDEOH);
+  // Hide the webcam element, and just show the canvas
+  video.hide();
+
+  // Posenet option to make posenet mirror user
+  const options = {
+    flipHorizontal: true,
+  };
+
+  // Create poseNet to run on webcam and call 'modelReady' when model loaded
+  poseNet = ml5.poseNet(video, options, modelReady);
+
+  // Everytime we get a pose from posenet, call "getPose"
+  // and pass in the results
+  poseNet.on("pose", (results) => getPose(results));
+}
+
+function draw() {
+  // one value from Arduino controls the background's red color
+  //background(0, 255, 255);
+  
+  /////////////////CAR///////
+  background(0);
+
+  strokeWeight(2);
+  stroke(100, 100, 0);
+  line(0.2 * HANDTRACKW, 0, 0.2 * HANDTRACKW, height);
+  line(0.4 * HANDTRACKW, 0, 0.4 * HANDTRACKW, height);
+  line(0.6 * HANDTRACKW, 0, 0.6 * HANDTRACKW, height);
+  line(0.8 * HANDTRACKW, 0, 0.8 * HANDTRACKW, height);
+  line(HANDTRACKW, 0, HANDTRACKW, height);
+  line(1.2 * HANDTRACKW, 0, 1.2 * HANDTRACKW, height);
+
+  if (myPose) {
+    try {
+      // Get right hand from pose
+      myRHand = getHand(myPose, false);
+      myRHand = mapHand(myRHand);
+
+      const rangeLeft2 = [0, 0.2 * HANDTRACKW];
+      const rangeLeft1 = [0.2 * HANDTRACKW, 0.4 * HANDTRACKW];
+      const rangeCenter = [0.4 * HANDTRACKW, 0.6 * HANDTRACKW];
+      const rangeRight1 = [0.6 * HANDTRACKW, 0.8 * HANDTRACKW];
+      const rangeRight2 = [0.8 * HANDTRACKW, HANDTRACKW];
+
+      // Check which range the hand is in and print out the corresponding data
+      if (myRHand.x >= rangeLeft2[0] && myRHand.x < rangeLeft2[1]) {
+        print("LEFT2");
+        movement = -1;
+      } else if (myRHand.x >= rangeLeft1[0] && myRHand.x < rangeLeft1[1]) {
+        print("LEFT1");
+        movement = -0.5;
+      } else if (myRHand.x >= rangeCenter[0] && myRHand.x < rangeCenter[1]) {
+        print("CENTER");
+        movement = 0;
+      } else if (myRHand.x >= rangeRight1[0] && myRHand.x < rangeRight1[1]) {
+        print("RIGHT1");
+        movement = 0.5;
+      } else if (myRHand.x >= rangeRight2[0] && myRHand.x <= rangeRight2[1]) {
+        print("RIGHT2");
+        movement = 1;
+      }
+      // Draw hand
+      push();
+      const offsetX = (width - HANDTRACKW) / 2;
+      const offsetY = (height - HANDTRACKH) / 2;
+      translate(offsetX, offsetY);
+      noStroke();
+      fill(CLR);
+      ellipse(myRHand.x, HANDTRACKH / 2, 50);
+      pop();
+    } catch (err) {
+      print("Right Hand not Detected");
+    }
+    print(keyVal)
+    
+    
+
+    //print(movement);
+   // print("here")
+    //print(writers);
+  }
+  //////////////////////////
+
+  if (!serialActive1 && !serialActive2) {
+    text("Press Space Bar to select Serial Port", 20, 30);
+  } else if (serialActive1 && serialActive2) {
+    text("Connected", 20, 30);
+
+    // Print the current values
+    text("Acceleration = " + str(Acceleration), 20, 50);
+    text("Brake = " + str(Brake), 20, 70);
+    mover();
+  }
+
+}
+
+function keyPressed() {
+  if (key == " ") {
+    // important to have in order to start the serial connection!!
+    setUpSerial1();
+  } else if (key == "x") {
+    // important to have in order to start the serial connection!!
+    setUpSerial2();
+    s2_comp=true
+  }
+}
+
+/////////////CAR/////////
+function serialReady() {
+  // Send initial command to stop the car
+  serial.write("S",0);
+  print("serialrdy");
+}
+
+function mover() {
+    print("mover");
+
+  // Send commands to the car based wwon keyboard input
+  if (Acceleration==1) {
+    writeSerial('S',0);
+   
+    //print(typeof msg1)
+    
+  }else if (Brake==1) {
+    writeSerial('W',0);
+  }else if ( movement < 0) {
+    print("left")
+    writeSerial('A',0);
+  }else if ( movement > 0) {
+        print("right")
+
+    writeSerial('D',0);
+  }else if (movement== 0) {
+    print("stop");
+    writeSerial('B',0);
+  }
+}
+
+// When posenet model is ready, let us know!
+function modelReady() {
+  console.log("Model Loaded");
+}
+
+// Function to get and send pose from posenet
+function getPose(poses) {
+  // We're using single detection so we'll only have one pose
+  // which will be at [0] in the array
+  myPose = poses[0];
+}
+
+// Function to get hand out of the pose
+function getHand(pose, mirror) {
+  // Return the wrist
+  return pose.pose.rightWrist;
+}
+
+// function mapHand(hand) {
+//   let tempHand = {};
+//   tempHand.x = map(hand.x, 0, VIDEOW, 0, HANDTRACKW);
+//   tempHand.y = map(hand.y, 0, VIDEOH, 0, HANDTRACKH);
+
+//   if (smooth) tempHand.x = averageX(tempHand.x);
+
+//   return tempHand;
+// }
+function mapHand(hand) {
+  let tempHand = {};
+  // Only add hand.x to recentXs if the confidence score is greater than 0.5
+  if (hand.confidence > 0.2) {
+    tempHand.x = map(hand.x, 0, VIDEOW, 0, HANDTRACKW);
+
+    if (smooth) tempHand.x = averageX(tempHand.x);
+  }
+
+  tempHand.y = map(hand.y, 0, VIDEOH, 0, HANDTRACKH);
+
+  return tempHand;
+}
+
+function averageX(x) {
+  // the first time this runs we add the current x to the array n number of times
+  if (recentXs.length < 1) {
+    console.log("this should only run once");
+    for (let i = 0; i < numXs; i++) {
+      recentXs.push(x);
+    }
+    // if the number of frames to average is increased, add more to the array
+  } else if (recentXs.length < numXs) {
+    console.log("adding more xs");
+    const moreXs = numXs - recentXs.length;
+    for (let i = 0; i < moreXs; i++) {
+      recentXs.push(x);
+    }
+    // otherwise update only the most recent number
+  } else {
+    recentXs.shift(); // removes first item from array
+    recentXs.push(x); // adds new x to end of array
+  }
+
+  let sum = 0;
+  for (let i = 0; i < recentXs.length; i++) {
+    sum += recentXs[i];
+  }
+
+  // return the average x value
+  return sum / recentXs.length;
+}
+
+////////////////////////
+
+// This function will be called by the web-serial library
+// with each new *line* of data. The serial library reads
+// the data until the newline and then gives it to us through
+// this callback function
+function readSerial(data) {
+  ////////////////////////////////////
+  //READ FROM ARDUINO HERE
+  ////////////////////////////////////
+
+  if (data != null) {
+   // print(data.value);
+    let fromArduino = data.value.split(",");
+    if (fromArduino.length == 2) {
+      //print(int(fromArduino[0]));
+      //print(int(fromArduino[1]));
+      Acceleration = int(fromArduino[0]);
+      Brake  = int(fromArduino[1])
+      
+    }
+
+    //////////////////////////////////
+    //SEND TO ARDUINO HERE (handshake)
+    //////////////////////////////////
+    if(s2_comp){
+    let sendToArduino = Acceleration + "," + Brake + "\n";
+      // mover()
+    //print("output:");
+    //print(sendToArduino);
+    //writeSerial(sendToArduino, 0);
+    }
+  }
+}
+
+
