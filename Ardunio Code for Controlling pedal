@@ -1,0 +1,69 @@
+// Week 11.2 Example of bidirectional serial communication
+
+// Inputs:
+// - A0 - sensor connected as voltage divider (e.g. potentiometer or light sensor)
+// - A1 - sensor connected as voltage divider 
+//
+// Outputs:
+// - 2 - LED
+// - 5 - LED
+const int pinA4 = A4; // Input pin A4
+const int pinA5 = A5; // Input pin A5
+
+bool prev_acc = false;
+bool prev_brk = false;
+bool sensors_changed = false;
+
+void setup() {
+  // Start serial communication so we can send data
+  // over the USB connection to our p5js sketch
+  
+
+  pinMode(pinA4, INPUT);
+  pinMode(pinA5, INPUT);
+
+  Serial.begin(9600);
+
+}
+
+void loop() {
+  // wait for data from p5 before doing something
+  // while (Serial.available()) {
+    // int Acceleration = Serial.parseInt();
+    // int Brake = Serial.parseInt();
+    // if (Serial.read() == '\n') {
+      // digitalWrite(leftLedPin, Acceleration);
+      // digitalWrite(rightLedPin, Brake);
+      int sensor = analogRead(pinA4);
+      delay(5);
+      int sensor2 = analogRead(pinA5);
+      delay(5);
+      
+
+  bool acc_changed = (sensor > 730 && !prev_acc) || (sensor <= 730 && prev_acc);
+  bool brk_changed = (sensor2 > 740 && !prev_brk) || (sensor2 <= 740 &&prev_brk);
+
+      
+  if(sensor > 730){prev_acc=true;}
+  else{prev_acc=false;}
+  if(sensor2 > 740){prev_brk=true;}
+  else{prev_brk=false;}
+
+  // Print sensor values if there is a change in acc or brk
+  if (acc_changed || brk_changed) {
+    Serial.print(prev_acc);
+    Serial.print(',');
+    Serial.println(prev_brk);
+   sensors_changed = true;
+  }
+
+  // If no change in sensors, send "0,0" once
+  if (!sensors_changed) {
+    Serial.println("0,0");
+    sensors_changed = true;
+  }
+  
+
+  // Wait a bit before checking the sensors again
+  delay(100);
+}
