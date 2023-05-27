@@ -6,7 +6,7 @@ How would someone virtually learn how complicated it is to drive a car? Would te
 **Experience**
 The entire concept is not based only on a driving experience. We introduce a racing experience by creating a race circuit. The idea is for a user to complete a lap in the fastest time possible. Before you begin the experience, you can view the leaderboard. After your time has been recorded, a pop-up appears for you to input your name to be added to the leaderboard. For this, we created a new user interface on a separate laptop. This laptop powers an Arduino circuit connection which features an ultrasonic sensor. The ultrasonic sensor checks when the car has crossed the start line and begins a timer, and detects when the user ends the circuit. After this, it records the time it took a user to complete the track and sends this data to the leaderboard.
 
-This piece of code is how we're able to load and show the leaderboard.
+**This piece of code is how we're able to load and show the leaderboard.**
 
 function loadScores() {
   let storedScores = getItem("leaderboard");
@@ -32,11 +32,11 @@ function saveScores() {
 **IMPLEMENTATION(The Car & Foot Pedal)
 **
 
-We first built the remote-controlled car using an Arduino Uno board, a servo motor, a Motor Shield 4 Channel L293D, an ultrasonic sensor, 4 DC motors, and other peripheral components. Using the Motor Shield 4 Channel L293D decreased numerous wired connections and allowed us space on the board on which we mounted all other components. After, we created a new Arduino circuit connection to use the foot pedal. 
+I first built the remote-controlled car using an Arduino Uno board, a servo motor, a Motor Shield 4 Channel L293D, an ultrasonic sensor, 4 DC motors, and other peripheral components. Using the Motor Shield 4 Channel L293D decreased numerous wired connections and allowed us space on the board on which we mounted all other components. After, I created a new Arduino circuit connection to use the foot pedal. 
 
 The foot pedal sends signals to the car by rotating a potentiometer whenever the pedal is engaged. The potentiometer value is converted into forward/backward movement before it reaches p5.js via serial communication.
 
-P5/Arduino Communication
+**P5/Arduino Communication**
 
 At first, a handshake is established to ensure communication exists before proceeding with the program:
 
@@ -92,7 +92,7 @@ function setup() {
 
 
 
-The Hand Gestures
+**The Hand Gestures**
 
 Two resources that helped detect the user's hand position were PoseNet and Teachable Machine. We used these two resources to create a camera tracking system which was then programmed to interpret specific hand gestures, such as moving the hand right or left to move the car in those directions. This aspect of our code handles the hand tracking and gestures.
 
@@ -142,7 +142,7 @@ if (myPose) {
 
 
 
-The Final Result & Car Control
+**The Final Result & Car Control**
 
 The final result was an integrated system consisting of the car, the pedal, and gesture control in P5.JS. When the code is run in p5.js, the camera detects a user’s hand position and translates it into movement commands for the car.
 
@@ -455,7 +455,7 @@ The car moves forward/backward when a user engages the foot pedals, and steers l
 
 
 
-CHALLENGES
+**CHALLENGES**
 
 One challenge we may face during the implementation is accurately interpreting the user's hand gestures. The camera tracking system required a lot of experimentation and programming adjustments to ensure that it interprets the user's hand movements while also being light and responsive. Originally the camera was tracking the X and Y axis, but it caused p5 to be very slow and laggy because of the number of variables that it needs to keep track of. The solution was to simply remove one of the axes, this improved the responsiveness of the program drastically.
 
